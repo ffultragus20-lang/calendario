@@ -12,8 +12,6 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-
-<!-- ✅ CORREGIDO: minúsculas EXACTAS -->
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <style>
@@ -71,10 +69,31 @@ body{
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  position:relative;
 }
 
 .day.pink{background:#ffb6c1;color:#000;}
 .day.blue{background:#4da3ff;color:#000;}
+
+/* ❌ DÍAS PASADOS */
+.day.past{
+  opacity:0.35;
+}
+
+.day.past::after{
+  content:"✕";
+  position:absolute;
+  color:#ff3b30;
+  font-size:18px;
+  font-weight:bold;
+}
+
+/* 🔴 DÍA ACTUAL */
+.day.today{
+  background:#ff3b30 !important;
+  color:#fff !important;
+  font-weight:bold;
+}
 
 .panel{
   margin-top:14px;
@@ -140,6 +159,11 @@ const months=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto",
 let current=new Date(2026,0,1);
 let selected=null;
 
+const today=new Date();
+const todayY=today.getFullYear();
+const todayM=today.getMonth();
+const todayD=today.getDate();
+
 const cal=document.getElementById("calendar");
 const panel=document.getElementById("panel");
 
@@ -163,6 +187,19 @@ function render(){
     const div=document.createElement("div");
     div.className="day";
     div.textContent=d;
+
+    const isPast =
+      current.getFullYear()<todayY ||
+      (current.getFullYear()===todayY && current.getMonth()<todayM) ||
+      (current.getFullYear()===todayY && current.getMonth()===todayM && d<todayD);
+
+    const isToday =
+      current.getFullYear()===todayY &&
+      current.getMonth()===todayM &&
+      d===todayD;
+
+    if(isPast) div.classList.add("past");
+    if(isToday) div.classList.add("today");
 
     const data=localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
     if(data){
