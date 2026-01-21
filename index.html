@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 
-<!-- Evita zoom y deformaciones -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <title>Calendario</title>
@@ -95,6 +94,59 @@ body {
     font-weight: bold;
     cursor: pointer;
 }
+
+/* ===============================
+   🌙 MODO OSCURO AUTOMÁTICO
+   =============================== */
+@media (prefers-color-scheme: dark) {
+
+  body {
+    background: #000;
+    color: #fff;
+  }
+
+  .contenedor {
+    background: #1c1c1e;
+  }
+
+  .boton {
+    background: #2c2c2e;
+    color: #fff;
+  }
+
+  .titulo {
+    color: #fff;
+  }
+
+  .dia-semana {
+    color: #b0b0b5;
+  }
+
+  .dia {
+    background: #2c2c2e;
+    border: 1px solid #3a3a3c;
+    color: #fff;
+  }
+
+  .dia:hover {
+    background: #3a3a3c;
+  }
+
+  .dia.marcado {
+    background: #4a1c1c;
+    color: #ff6b6b;
+  }
+
+  .dia.hoy {
+    background: #ff3b30;
+    color: #fff;
+  }
+
+  .mes-anual {
+    background: #2c2c2e;
+    color: #fff;
+  }
+}
 </style>
 </head>
 
@@ -143,9 +195,7 @@ titulo.onclick = () => {
 function render() {
     contenido.innerHTML = "";
     titulo.textContent = meses[fecha.getMonth()] + " " + fecha.getFullYear();
-
-    if (vista === "mes") renderMes();
-    else renderAño();
+    vista === "mes" ? renderMes() : renderAño();
 }
 
 function renderMes() {
