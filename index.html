@@ -2,11 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-
-<!-- CLAVE PARA GITHUB PAGES -->
-<base href="/calendario/">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Calendario</title>
 
 <link rel="manifest" href="manifest.json">
@@ -47,7 +44,6 @@ body{
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  font-size:18px;
 }
 
 .title{
@@ -75,7 +71,9 @@ body{
 .day.pink{background:#ffb6c1;color:#000;}
 .day.blue{background:#4da3ff;color:#000;}
 
-.day.past{opacity:.35;}
+.day.past{
+  opacity:0.35;
+}
 .day.past::after{
   content:"✕";
   position:absolute;
@@ -84,8 +82,8 @@ body{
 }
 
 .day.today{
-  background:#ff3b30!important;
-  color:#fff!important;
+  background:#ff3b30 !important;
+  color:#fff !important;
   font-weight:bold;
 }
 
@@ -108,7 +106,11 @@ input,select,button{
 }
 
 button{font-weight:bold;}
-.delete{background:#ff3b30;color:#fff;}
+
+.delete{
+  background:#ff3b30;
+  color:white;
+}
 </style>
 </head>
 
@@ -116,71 +118,80 @@ button{font-weight:bold;}
 
 <div class="app">
   <div class="header">
-    <div class="btn" onclick="changeMonth(-1)">‹</div>
+    <div class="btn" id="prev">‹</div>
     <div class="title" id="title"></div>
-    <div class="btn" onclick="changeMonth(1)">›</div>
+    <div class="btn" id="next">›</div>
   </div>
 
   <div class="grid" id="calendar"></div>
 
   <div class="panel" id="panel">
     <div id="panelDate"></div>
+
     <input id="note" placeholder="Ej: ❤️ Aniversario">
+
     <select id="color">
       <option value="pink">Rosado</option>
       <option value="blue">Azul</option>
     </select>
+
     <select id="repeat">
       <option value="none">No repetir</option>
       <option value="month">Cada mes</option>
       <option value="year">Cada año</option>
     </select>
-    <button onclick="save()">Guardar</button>
-    <button class="delete" onclick="removeNote()">Eliminar nota</button>
+
+    <button id="save">Guardar</button>
+    <button class="delete" id="remove">Eliminar nota</button>
   </div>
 </div>
 
 <script>
 const months=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-let current = new Date();
-current.setDate(1); // 🔒 evita bugs de mes
+let current=new Date();
+current.setDate(1);
 
-let selected = null;
+let selectedDay=null;
 
-const today = new Date();
+const cal=document.getElementById("calendar");
+const panel=document.getElementById("panel");
+const title=document.getElementById("title");
+
+const today=new Date();
 today.setHours(0,0,0,0);
 
-const cal = document.getElementById("calendar");
-const panel = document.getElementById("panel");
+const key=(y,m,d)=>`${y}-${m}-${d}`;
 
-function key(y,m,d){ return `cal-${y}-${m}-${d}`; }
+document.getElementById("prev").onclick=()=>changeMonth(-1);
+document.getElementById("next").onclick=()=>changeMonth(1);
+document.getElementById("save").onclick=save;
+document.getElementById("remove").onclick=removeNote;
 
-function changeMonth(step){
-  current = new Date(current.getFullYear(), current.getMonth()+step, 1);
-  selected = null;
+function changeMonth(v){
+  current.setMonth(current.getMonth()+v);
+  selectedDay=null;
   panel.classList.remove("show");
   render();
 }
 
 function render(){
-  document.getElementById("title").textContent =
-    months[current.getMonth()]+" "+current.getFullYear();
-
+  title.textContent = months[current.getMonth()]+" "+current.getFullYear();
   cal.innerHTML="";
-  const days = new Date(current.getFullYear(), current.getMonth()+1, 0).getDate();
 
-  for(let d=1; d<=days; d++){
+  const daysInMonth = new Date(current.getFullYear(), current.getMonth()+1, 0).getDate();
+
+  for(let d=1; d<=daysInMonth; d++){
     const div=document.createElement("div");
     div.className="day";
     div.textContent=d;
 
-    const dateObj = new Date(current.getFullYear(), current.getMonth(), d);
+    const dateObj=new Date(current.getFullYear(),current.getMonth(),d);
 
     if(dateObj < today) div.classList.add("past");
     if(dateObj.getTime()===today.getTime()) div.classList.add("today");
 
-    const data = localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
+    const data=localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
     if(data){
       const o=JSON.parse(data);
       div.classList.add(o.color);
@@ -192,18 +203,18 @@ function render(){
 }
 
 function toggleDay(d){
-  if(selected===d){
-    selected=null;
+  if(selectedDay===d){
+    selectedDay=null;
     panel.classList.remove("show");
     return;
   }
 
-  selected=d;
+  selectedDay=d;
   panel.classList.add("show");
   document.getElementById("panelDate").textContent =
     `${d} de ${months[current.getMonth()]}`;
 
-  const data = localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
+  const data=localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
   if(data){
     const o=JSON.parse(data);
     note.value=o.text;
@@ -217,20 +228,52 @@ function toggleDay(d){
 }
 
 function save(){
-  if(!selected) return;
-  const obj={text:note.value,color:color.value,repeat:repeat.value};
+  if(!selectedDay) return;
+
+  const obj={ text:note.value, color:color.value, repeat:repeat.value };
   const y=current.getFullYear();
   const m=current.getMonth();
 
-  localStorage.setItem(key(y,m,selected),JSON.stringify(obj));
+  localStorage.setItem(key(y,m,selectedDay),JSON.stringify(obj));
+
+  if(obj.repeat==="month"){
+    for(let i=0;i<12;i++){
+      localStorage.setItem(key(y,i,selectedDay),JSON.stringify(obj));
+    }
+  }
+
+  if(obj.repeat==="year"){
+    for(let i=y;i<=y+10;i++){
+      localStorage.setItem(key(i,m,selectedDay),JSON.stringify(obj));
+    }
+  }
+
   render();
 }
 
 function removeNote(){
-  if(!selected) return;
-  localStorage.removeItem(key(current.getFullYear(),current.getMonth(),selected));
+  if(!selectedDay) return;
+
+  const data=localStorage.getItem(key(current.getFullYear(),current.getMonth(),selectedDay));
+  if(data){
+    const o=JSON.parse(data);
+
+    if(o.repeat==="month"){
+      for(let i=0;i<12;i++){
+        localStorage.removeItem(key(current.getFullYear(),i,selectedDay));
+      }
+    }
+
+    if(o.repeat==="year"){
+      for(let i=current.getFullYear();i<=current.getFullYear()+10;i++){
+        localStorage.removeItem(key(i,current.getMonth(),selectedDay));
+      }
+    }
+  }
+
+  localStorage.removeItem(key(current.getFullYear(),current.getMonth(),selectedDay));
   panel.classList.remove("show");
-  selected=null;
+  selectedDay=null;
   render();
 }
 
