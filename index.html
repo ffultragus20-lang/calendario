@@ -2,13 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- OBLIGATORIO para GitHub Pages en subcarpeta -->
+<base href="/calendario/">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calendario</title>
 
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <style>
 body{
@@ -44,6 +47,7 @@ body{
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  font-size:20px;
 }
 
 .title{
@@ -74,6 +78,7 @@ body{
 .day.past{
   opacity:0.35;
 }
+
 .day.past::after{
   content:"✕";
   position:absolute;
@@ -154,14 +159,14 @@ let current=new Date();
 let selected=null;
 
 const today=new Date();
-const tY=today.getFullYear();
-const tM=today.getMonth();
-const tD=today.getDate();
+const todayY=today.getFullYear();
+const todayM=today.getMonth();
+const todayD=today.getDate();
 
 const cal=document.getElementById("calendar");
 const panel=document.getElementById("panel");
 
-const key=(y,m,d)=>`${y}-${m}-${d}`;
+function key(y,m,d){return `${y}-${m}-${d}`;}
 
 function changeMonth(v){
   current.setMonth(current.getMonth()+v);
@@ -171,8 +176,8 @@ function changeMonth(v){
 }
 
 function render(){
-  document.getElementById("title").textContent =
-    `${months[current.getMonth()]} ${current.getFullYear()}`;
+  document.getElementById("title").textContent=
+    months[current.getMonth()]+" "+current.getFullYear();
 
   cal.innerHTML="";
   const days=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
@@ -183,14 +188,14 @@ function render(){
     div.textContent=d;
 
     const isPast =
-      current.getFullYear()<tY ||
-      (current.getFullYear()===tY && current.getMonth()<tM) ||
-      (current.getFullYear()===tY && current.getMonth()===tM && d<tD);
+      current.getFullYear()<todayY ||
+      (current.getFullYear()===todayY && current.getMonth()<todayM) ||
+      (current.getFullYear()===todayY && current.getMonth()===todayM && d<todayD);
 
     const isToday =
-      current.getFullYear()===tY &&
-      current.getMonth()===tM &&
-      d===tD;
+      current.getFullYear()===todayY &&
+      current.getMonth()===todayM &&
+      d===todayD;
 
     if(isPast) div.classList.add("past");
     if(isToday) div.classList.add("today");
@@ -209,9 +214,12 @@ function render(){
 function openDay(d){
   selected=d;
   panel.classList.add("show");
-  panelDate.textContent=`${d} de ${months[current.getMonth()]}`;
+
+  document.getElementById("panelDate").textContent=
+    `${d} de ${months[current.getMonth()]} ${current.getFullYear()}`;
 
   const data=localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
+
   if(data){
     const o=JSON.parse(data);
     note.value=o.text;
@@ -236,16 +244,18 @@ function save(){
   const y=current.getFullYear();
   const m=current.getMonth();
 
+  localStorage.setItem(key(y,m,selected),JSON.stringify(obj));
+
   if(obj.repeat==="month"){
     for(let i=0;i<12;i++){
       localStorage.setItem(key(y,i,selected),JSON.stringify(obj));
     }
-  }else if(obj.repeat==="year"){
-    for(let i=y;i<=y+10;i++){
+  }
+
+  if(obj.repeat==="year"){
+    for(let i=y;i<=y+20;i++){
       localStorage.setItem(key(i,m,selected),JSON.stringify(obj));
     }
-  }else{
-    localStorage.setItem(key(y,m,selected),JSON.stringify(obj));
   }
 
   render();
@@ -267,7 +277,7 @@ function removeNote(){
       localStorage.removeItem(key(y,i,selected));
     }
   }else if(o.repeat==="year"){
-    for(let i=y;i<=y+10;i++){
+    for(let i=y;i<=y+20;i++){
       localStorage.removeItem(key(i,m,selected));
     }
   }else{
