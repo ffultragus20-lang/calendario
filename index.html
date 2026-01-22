@@ -6,9 +6,9 @@
 
 <title>Calendario</title>
 
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <style>
 body{
@@ -44,33 +44,17 @@ body{
   align-items:center;
   justify-content:center;
   cursor:pointer;
-  font-size:20px;
 }
 
 .title{
   font-size:20px;
   font-weight:600;
-  cursor:pointer;
 }
 
 .grid{
   display:grid;
   grid-template-columns:repeat(7,1fr);
   gap:8px;
-}
-
-.month-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-
-.month-btn{
-  background:#2c2c2e;
-  border-radius:14px;
-  padding:14px 0;
-  text-align:center;
-  cursor:pointer;
 }
 
 .day{
@@ -84,7 +68,12 @@ body{
   position:relative;
 }
 
-.day.past{opacity:.35}
+.day.pink{background:#ffb6c1;color:#000;}
+.day.blue{background:#4da3ff;color:#000;}
+
+.day.past{
+  opacity:0.35;
+}
 .day.past::after{
   content:"✕";
   position:absolute;
@@ -94,7 +83,7 @@ body{
 
 .day.today{
   background:#ff3b30 !important;
-  color:#fff;
+  color:#fff !important;
   font-weight:bold;
 }
 
@@ -119,6 +108,7 @@ input,select,button{
 .delete{
   background:#ff3b30;
   color:white;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -128,14 +118,15 @@ input,select,button{
 <div class="app">
   <div class="header">
     <div class="btn" onclick="changeMonth(-1)">‹</div>
-    <div class="title" id="title" onclick="toggleMonths()"></div>
+    <div class="title" id="title"></div>
     <div class="btn" onclick="changeMonth(1)">›</div>
   </div>
 
-  <div id="calendar"></div>
+  <div class="grid" id="calendar"></div>
 
   <div class="panel" id="panel">
     <div id="panelDate"></div>
+
     <input id="note" placeholder="Ej: ❤️ Aniversario">
 
     <select id="color">
@@ -158,81 +149,120 @@ input,select,button{
 const months=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let current=new Date();
 let selected=null;
-let showMonths=false;
 
 const today=new Date();
 const cal=document.getElementById("calendar");
 const panel=document.getElementById("panel");
 
-function key(y,m,d){return `${y}-${m}-${d}`;}
-
-function toggleMonths(){
-  showMonths=!showMonths;
-  render();
-}
+function key(y,m,d){ return `${y}-${m}-${d}`; }
 
 function changeMonth(v){
   current.setMonth(current.getMonth()+v);
-  showMonths=false;
+  panel.classList.remove("show");
+  selected=null;
   render();
 }
 
 function render(){
-  document.getElementById("title").textContent=
+  document.getElementById("title").textContent =
     months[current.getMonth()]+" "+current.getFullYear();
 
-  panel.classList.remove("show");
-  selected=null;
+  cal.innerHTML="";
+  const days = new Date(current.getFullYear(), current.getMonth()+1, 0).getDate();
 
-  if(showMonths){
-    cal.innerHTML='<div class="month-grid">'+
-      months.map((m,i)=>`<div class="month-btn" onclick="selectMonth(${i})">${m}</div>`).join("")+
-      '</div>';
-    return;
-  }
-
-  cal.innerHTML='<div class="grid"></div>';
-  const grid=cal.firstChild;
-  const days=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
-
-  for(let d=1;d<=days;d++){
+  for(let d=1; d<=days; d++){
     const div=document.createElement("div");
     div.className="day";
     div.textContent=d;
 
-    const isPast=
-      current.getFullYear()<today.getFullYear() ||
-      (current.getFullYear()===today.getFullYear() &&
-       current.getMonth()<today.getMonth()) ||
-      (current.getFullYear()===today.getFullYear() &&
-       current.getMonth()===today.getMonth() &&
-       d<today.getDate());
+    const isPast = new Date(current.getFullYear(),current.getMonth(),d) < new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const isToday =
+      d===today.getDate() &&
+      current.getMonth()===today.getMonth() &&
+      current.getFullYear()===today.getFullYear();
 
     if(isPast) div.classList.add("past");
-    if(current.getFullYear()===today.getFullYear() &&
-       current.getMonth()===today.getMonth() &&
-       d===today.getDate()) div.classList.add("today");
+    if(isToday) div.classList.add("today");
+
+    const data = localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
+    if(data){
+      const o=JSON.parse(data);
+      div.classList.add(o.color);
+    }
 
     div.onclick=()=>openDay(d);
-    grid.appendChild(div);
+    cal.appendChild(div);
   }
-}
-
-function selectMonth(m){
-  current.setMonth(m);
-  showMonths=false;
-  render();
 }
 
 function openDay(d){
   selected=d;
   panel.classList.add("show");
-  document.getElementById("panelDate").textContent=
-    `${d} de ${months[current.getMonth()]} ${current.getFullYear()}`;
+  document.getElementById("panelDate").textContent =
+    `${d} de ${months[current.getMonth()]}`;
+
+  const data = localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
+  if(data){
+    const o=JSON.parse(data);
+    note.value=o.text;
+    color.value=o.color;
+    repeat.value=o.repeat;
+  }else{
+    note.value="";
+    color.value="pink";
+    repeat.value="none";
+  }
 }
 
-function save(){}
-function removeNote(){}
+function save(){
+  if(!selected) return;
+  const obj={ text:note.value, color:color.value, repeat:repeat.value };
+
+  const y=current.getFullYear();
+  const m=current.getMonth();
+
+  localStorage.setItem(key(y,m,selected),JSON.stringify(obj));
+
+  if(obj.repeat==="month"){
+    for(let i=0;i<12;i++){
+      localStorage.setItem(key(y,i,selected),JSON.stringify(obj));
+    }
+  }
+
+  if(obj.repeat==="year"){
+    for(let i=y;i<=y+10;i++){
+      localStorage.setItem(key(i,m,selected),JSON.stringify(obj));
+    }
+  }
+
+  render();
+}
+
+function removeNote(){
+  if(!selected) return;
+
+  const data = localStorage.getItem(key(current.getFullYear(),current.getMonth(),selected));
+  if(data){
+    const o = JSON.parse(data);
+
+    if(o.repeat==="month"){
+      for(let i=0;i<12;i++){
+        localStorage.removeItem(key(current.getFullYear(),i,selected));
+      }
+    }
+
+    if(o.repeat==="year"){
+      for(let i=current.getFullYear();i<=current.getFullYear()+10;i++){
+        localStorage.removeItem(key(i,current.getMonth(),selected));
+      }
+    }
+  }
+
+  localStorage.removeItem(key(current.getFullYear(),current.getMonth(),selected));
+  panel.classList.remove("show");
+  selected=null;
+  render();
+}
 
 render();
 </script>
