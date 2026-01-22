@@ -1,210 +1,64 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-
-<!-- 🔑 CLAVE PARA QUE NO SALGA 404 EN iOS PWA -->
-<base href="/calendario/">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Calendario</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
-<link rel="apple-touch-icon" href="icon-192.png">
-
-<style>
-body{
-  margin:0;
-  background:#000;
-  color:#fff;
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  display:flex;
-  justify-content:center;
-  padding-top:40px;
-}
-
-.app{
-  width:350px;
-  background:#1c1c1e;
-  border-radius:24px;
-  padding:16px;
-}
-
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:12px;
-}
-
-.btn{
-  width:36px;
-  height:36px;
-  background:#2c2c2e;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-}
-
-.title{
-  font-size:20px;
-  font-weight:600;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:8px;
-}
-
-.day{
-  height:40px;
-  background:#2c2c2e;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  position:relative;
-}
-
-.day.pink{background:#ffb6c1;color:#000;}
-.day.blue{background:#4da3ff;color:#000;}
-
-/* ❌ DÍAS PASADOS */
-.day.past{
-  opacity:0.35;
-}
-
-.day.past::after{
-  content:"✕";
-  position:absolute;
-  color:#ff3b30;
-  font-size:18px;
-  font-weight:bold;
-}
-
-/* 🔴 DÍA ACTUAL */
-.day.today{
-  background:#ff3b30 !important;
-  color:#fff !important;
-  font-weight:bold;
-}
-
-.panel{
-  margin-top:14px;
-  background:#2c2c2e;
-  border-radius:18px;
-  padding:14px;
-  display:none;
-}
-
-.panel.show{display:block;}
-
-input,select,button{
-  width:100%;
-  margin-top:8px;
-  padding:10px;
-  border-radius:12px;
-  border:none;
-}
-
-button{font-weight:bold;}
-
-.delete{
-  background:#ff3b30;
-  color:white;
-}
-</style>
-</head>
-
-<body>
-
-<div class="app">
-  <div class="header">
-    <div class="btn" onclick="changeMonth(-1)">‹</div>
-    <div class="title" id="title"></div>
-    <div class="btn" onclick="changeMonth(1)">›</div>
-  </div>
-
-  <div class="grid" id="calendar"></div>
-
-  <div class="panel" id="panel">
-    <div id="panelDate"></div>
-
-    <input id="note" placeholder="Ej: ❤️ Aniversario">
-
-    <select id="color">
-      <option value="pink">Rosado</option>
-      <option value="blue">Azul</option>
-    </select>
-
-    <select id="repeat">
-      <option value="none">No repetir</option>
-      <option value="month">Cada mes</option>
-      <option value="year">Cada año</option>
-    </select>
-
-    <button onclick="save()">Guardar</button>
-    <button class="delete" onclick="removeNote()">Eliminar nota</button>
-  </div>
-</div>
-
 <script>
 const months=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-let current=new Date(2026,0,1);
+
+let current=new Date();
+current.setDate(1);
 let selected=null;
+let monthPicker=false;
 
 const today=new Date();
-const todayY=today.getFullYear();
-const todayM=today.getMonth();
-const todayD=today.getDate();
+today.setHours(0,0,0,0);
 
 const cal=document.getElementById("calendar");
 const panel=document.getElementById("panel");
+const title=document.getElementById("title");
+
+title.onclick=toggleMonthPicker;
 
 function key(y,m,d){return `${y}-${m}-${d}`;}
 
+function toggleMonthPicker(){
+  monthPicker=!monthPicker;
+  panel.classList.remove("show");
+  render();
+}
+
 function changeMonth(v){
   current.setMonth(current.getMonth()+v);
-  panel.classList.remove("show");
   selected=null;
+  panel.classList.remove("show");
   render();
 }
 
 function render(){
-  document.getElementById("title").textContent=
-    months[current.getMonth()]+" "+current.getFullYear();
-
   cal.innerHTML="";
-  const days=new Date(current.getFullYear(),current.getMonth()+1,0).getDate();
+  title.textContent=`${months[current.getMonth()]} ${current.getFullYear()}`;
+
+  if(monthPicker){
+    renderMonthPicker();
+    return;
+  }
+
+  const y=current.getFullYear();
+  const m=current.getMonth();
+  const days=new Date(y,m+1,0).getDate();
 
   for(let d=1;d<=days;d++){
     const div=document.createElement("div");
     div.className="day";
     div.textContent=d;
 
-    const isPast =
-      current.getFullYear()<todayY ||
-      (current.getFullYear()===todayY && current.getMonth()<todayM) ||
-      (current.getFullYear()===todayY && current.getMonth()===todayM && d<todayD);
+    const date=new Date(y,m,d);
+    date.setHours(0,0,0,0);
 
-    const isToday =
-      current.getFullYear()===todayY &&
-      current.getMonth()===todayM &&
-      d===todayD;
+    if(date<today) div.classList.add("past");
+    if(date.getTime()===today.getTime()) div.classList.add("today");
 
-    if(isPast) div.classList.add("past");
-    if(isToday) div.classList.add("today");
-
-    const data=localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
+    const data=localStorage.getItem(key(y,m,d));
     if(data){
       const o=JSON.parse(data);
       div.classList.add(o.color);
+      div.textContent=d;
     }
 
     div.onclick=()=>openDay(d);
@@ -212,12 +66,23 @@ function render(){
   }
 }
 
+function renderMonthPicker(){
+  cal.style.gridTemplateColumns="repeat(3,1fr)";
+  months.forEach((name,i)=>{
+    const div=document.createElement("div");
+    div.className="day";
+    div.textContent=name;
+    div.style.height="50px";
+    div.onclick=()=>{
+      current.setMonth(i);
+      monthPicker=false;
+      render();
+    };
+    cal.appendChild(div);
+  });
+}
+
 function openDay(d){
-  if(selected===d){
-    panel.classList.remove("show");
-    selected=null;
-    return;
-  }
   selected=d;
   panel.classList.add("show");
 
@@ -241,6 +106,7 @@ function openDay(d){
 
 function save(){
   if(!selected) return;
+
   const obj={
     text:note.value,
     color:color.value,
@@ -259,7 +125,7 @@ function save(){
   }
 
   if(obj.repeat==="year"){
-    for(let i=2026;i<2036;i++){
+    for(let i=y;i<y+20;i++){
       localStorage.setItem(key(i,m,selected),JSON.stringify(obj));
     }
   }
@@ -269,14 +135,33 @@ function save(){
 
 function removeNote(){
   if(!selected) return;
-  localStorage.removeItem(key(current.getFullYear(),current.getMonth(),selected));
-  panel.classList.remove("show");
+
+  const y=current.getFullYear();
+  const m=current.getMonth();
+  const k=key(y,m,selected);
+  const data=localStorage.getItem(k);
+  if(!data) return;
+
+  const o=JSON.parse(data);
+
+  if(o.repeat==="month"){
+    for(let i=0;i<12;i++){
+      localStorage.removeItem(key(y,i,selected));
+    }
+  }
+  else if(o.repeat==="year"){
+    for(let i=y;i<y+20;i++){
+      localStorage.removeItem(key(i,m,selected));
+    }
+  }
+  else{
+    localStorage.removeItem(k);
+  }
+
   selected=null;
+  panel.classList.remove("show");
   render();
 }
 
 render();
 </script>
-
-</body>
-</html>
