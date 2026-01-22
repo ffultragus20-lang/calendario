@@ -2,16 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-
-<!-- OBLIGATORIO para GitHub Pages en subcarpeta -->
-<base href="/calendario/">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Calendario</title>
 
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#000000">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 
 <style>
 body{
@@ -266,7 +263,6 @@ function removeNote(){
 
   const y=current.getFullYear();
   const m=current.getMonth();
-
   const data=localStorage.getItem(key(y,m,selected));
   if(!data) return;
 
