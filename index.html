@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 
-<!-- 🔑 FUNDAMENTAL PARA GITHUB PAGES -->
+<!-- CLAVE PARA GITHUB PAGES -->
 <base href="/calendario/">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,9 +75,7 @@ body{
 .day.pink{background:#ffb6c1;color:#000;}
 .day.blue{background:#4da3ff;color:#000;}
 
-.day.past{
-  opacity:0.35;
-}
+.day.past{opacity:.35;}
 .day.past::after{
   content:"✕";
   position:absolute;
@@ -86,8 +84,8 @@ body{
 }
 
 .day.today{
-  background:#ff3b30 !important;
-  color:#fff !important;
+  background:#ff3b30!important;
+  color:#fff!important;
   font-weight:bold;
 }
 
@@ -110,11 +108,7 @@ input,select,button{
 }
 
 button{font-weight:bold;}
-
-.delete{
-  background:#ff3b30;
-  color:white;
-}
+.delete{background:#ff3b30;color:#fff;}
 </style>
 </head>
 
@@ -131,20 +125,16 @@ button{font-weight:bold;}
 
   <div class="panel" id="panel">
     <div id="panelDate"></div>
-
     <input id="note" placeholder="Ej: ❤️ Aniversario">
-
     <select id="color">
       <option value="pink">Rosado</option>
       <option value="blue">Azul</option>
     </select>
-
     <select id="repeat">
       <option value="none">No repetir</option>
       <option value="month">Cada mes</option>
       <option value="year">Cada año</option>
     </select>
-
     <button onclick="save()">Guardar</button>
     <button class="delete" onclick="removeNote()">Eliminar nota</button>
   </div>
@@ -154,6 +144,8 @@ button{font-weight:bold;}
 const months=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 let current = new Date();
+current.setDate(1); // 🔒 evita bugs de mes
+
 let selected = null;
 
 const today = new Date();
@@ -162,14 +154,12 @@ today.setHours(0,0,0,0);
 const cal = document.getElementById("calendar");
 const panel = document.getElementById("panel");
 
-function key(y,m,d){
-  return `cal-${y}-${m}-${d}`;
-}
+function key(y,m,d){ return `cal-${y}-${m}-${d}`; }
 
-function changeMonth(v){
-  current = new Date(current.getFullYear(), current.getMonth()+v, 1);
+function changeMonth(step){
+  current = new Date(current.getFullYear(), current.getMonth()+step, 1);
+  selected = null;
   panel.classList.remove("show");
-  selected=null;
   render();
 }
 
@@ -188,7 +178,7 @@ function render(){
     const dateObj = new Date(current.getFullYear(), current.getMonth(), d);
 
     if(dateObj < today) div.classList.add("past");
-    if(dateObj.getTime() === today.getTime()) div.classList.add("today");
+    if(dateObj.getTime()===today.getTime()) div.classList.add("today");
 
     const data = localStorage.getItem(key(current.getFullYear(),current.getMonth(),d));
     if(data){
@@ -196,12 +186,18 @@ function render(){
       div.classList.add(o.color);
     }
 
-    div.onclick=()=>openDay(d);
+    div.onclick=()=>toggleDay(d);
     cal.appendChild(div);
   }
 }
 
-function openDay(d){
+function toggleDay(d){
+  if(selected===d){
+    selected=null;
+    panel.classList.remove("show");
+    return;
+  }
+
   selected=d;
   panel.classList.add("show");
   document.getElementById("panelDate").textContent =
@@ -222,52 +218,17 @@ function openDay(d){
 
 function save(){
   if(!selected) return;
-
   const obj={text:note.value,color:color.value,repeat:repeat.value};
   const y=current.getFullYear();
   const m=current.getMonth();
 
   localStorage.setItem(key(y,m,selected),JSON.stringify(obj));
-
-  if(obj.repeat==="month"){
-    for(let i=0;i<12;i++){
-      localStorage.setItem(key(y,i,selected),JSON.stringify(obj));
-    }
-  }
-
-  if(obj.repeat==="year"){
-    for(let i=y;i<=y+20;i++){
-      localStorage.setItem(key(i,m,selected),JSON.stringify(obj));
-    }
-  }
-
   render();
 }
 
 function removeNote(){
   if(!selected) return;
-
-  const y=current.getFullYear();
-  const m=current.getMonth();
-  const data = localStorage.getItem(key(y,m,selected));
-
-  if(data){
-    const o = JSON.parse(data);
-
-    if(o.repeat==="month"){
-      for(let i=0;i<12;i++){
-        localStorage.removeItem(key(y,i,selected));
-      }
-    }
-
-    if(o.repeat==="year"){
-      for(let i=y;i<=y+20;i++){
-        localStorage.removeItem(key(i,m,selected));
-      }
-    }
-  }
-
-  localStorage.removeItem(key(y,m,selected));
+  localStorage.removeItem(key(current.getFullYear(),current.getMonth(),selected));
   panel.classList.remove("show");
   selected=null;
   render();
